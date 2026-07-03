@@ -3,9 +3,13 @@
 ![Power BI](https://img.shields.io/badge/Power%20BI-Dashboard-yellow?logo=powerbi)
 ![Python](https://img.shields.io/badge/Python-3.12.4-blue?logo=python)
 ![MySQL](https://img.shields.io/badge/MySQL-Star%20Schema-orange?logo=mysql)
+![BigQuery](https://img.shields.io/badge/BigQuery-Cloud%20Warehouse-blue?logo=googlebigquery)
+![dbt](https://img.shields.io/badge/dbt-1.11-orange?logo=dbt)
 ![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
 
 A comprehensive **Data Analytics project** built on 1.34 million real-world loan records from the Lending Club dataset. This project covers the full data analyst pipeline — from raw data cleaning to a 4-page interactive Power BI dashboard — with a focus on loan default risk, portfolio health, and actionable business recommendations for a BFSI (Banking, Financial Services & Insurance) context.
+
+Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt transformation pipeline** (staging → intermediate → marts), with the Power BI dashboard reconnected to run live off the cloud layer.
 
 ---
 
@@ -31,9 +35,11 @@ To analyze a large-scale BFSI loan dataset and identify key risk drivers behind 
 
 | Tool | Purpose |
 |---|---|
-| Python 3.12.4 | Data cleaning, feature engineering, EDA, statistical validation |
-| MySQL | Star schema design, data loading, SQL query library |
-| Power BI Desktop | 4-page interactive dashboard |
+| Python 3.12.4 | Data cleaning, feature engineering, EDA, statistical validation, BigQuery data load |
+| MySQL | Local star schema design, SQL query library, query benchmarking |
+| Google BigQuery | Cloud data warehouse — free tier (10 GB storage, 1 TB queries/month) |
+| dbt 1.11 | 3-layer transformation pipeline: staging → intermediate → marts |
+| Power BI Desktop | 4-page interactive dashboard — reconnected to BigQuery |
 | VS Code | Python scripting and development environment |
 
 ---
@@ -45,16 +51,6 @@ BFSI_Loan_Analytics/
 │
 ├── assets/
 │   └── screenshots/
-│       ├── 01_default_rate_by_grade.png
-│       ├── 02_default_rate_by_risk_tier.png
-│       ├── 03_default_rate_by_dti_band.png
-│       ├── 04_default_rate_by_income_band.png
-│       ├── 05_default_rate_by_purpose.png
-│       ├── 06_default_rate_by_year.png
-│       ├── page1_portfolio_overview.png
-│       ├── page2_risk_intelligence.png
-│       ├── page3_portfolio_health.png
-│       └── page4_business_recommendations.png
 │
 ├── data/
 │   ├── raw/
@@ -73,8 +69,29 @@ BFSI_Loan_Analytics/
 │   ├── query_library.sql                     # 6 analytical SQL queries
 │   └── explain_benchmarks.md                 # Query performance benchmarks
 │
+├── dbt/
+│   └── bfsi_dbt/
+│       ├── dbt_project.yml
+│       └── models/
+│           ├── sources.yml                   # BigQuery raw source definition
+│           ├── staging/
+│           │   └── stg_loans.sql             # Column renaming, type casting
+│           ├── intermediate/
+│           │   └── int_loans_enriched.sql    # Surrogate key generation
+│           └── marts/
+│               ├── fact_loans.sql            # 1,342,942 row fact table
+│               ├── dim_grade.sql             # 7 rows
+│               ├── dim_purpose.sql           # 14 rows
+│               ├── dim_income_band.sql       # 4 rows
+│               ├── dim_dti_band.sql          # 5 rows
+│               ├── dim_risk_tier.sql         # 3 rows
+│               └── schema.yml                # 37 data quality tests
+│
+├── scripts/
+│   └── load_to_bigquery.py                   # CSV → BigQuery raw loader
+│
 ├── powerbi/
-│   └── BFSI_loan_dashboard.pbix              # 4-page Power BI dashboard
+│   └── BFSI_loan_dashboard.pbix              # 4-page Power BI dashboard (BigQuery)
 │
 ├── .gitignore
 └── README.md
@@ -95,9 +112,9 @@ BFSI_Loan_Analytics/
 
 ---
 
-## 🗄️ MySQL Star Schema
+## 🗄️ Star Schema (MySQL + BigQuery)
 
-Designed a fully normalized **star schema** with 6 tables:
+Designed a **star schema** with 6 tables — built first in MySQL, then replicated in Google BigQuery via dbt:
 
 | Table | Rows | Description |
 |---|---|---|
@@ -107,6 +124,44 @@ Designed a fully normalized **star schema** with 6 tables:
 | dim_income_band | 4 | Income segment buckets |
 | dim_dti_band | 5 | DTI range buckets |
 | dim_risk_tier | 3 | Low / Medium / High risk tiers |
+
+---
+
+## ☁️ Cloud + dbt Extension
+
+### Architecture
+
+```
+lending_club_features.csv (local)
+        ↓  [scripts/load_to_bigquery.py]
+BigQuery: raw.raw_loans  (1,342,942 rows, 91 cols)
+        ↓
+dbt staging:      stg_loans             — column renaming, type casting (view)
+        ↓
+dbt intermediate: int_loans_enriched    — surrogate loan_id via ROW_NUMBER() (table)
+        ↓
+dbt marts:        fact_loans + 5 dims   — star schema rebuilt in BigQuery (tables)
+        ↓
+Power BI Dashboard (Import mode from bfsi_loans dataset)
+```
+
+### BigQuery Datasets
+
+| Dataset | Contents |
+|---|---|
+| `raw` | `raw_loans` — source table loaded from CSV |
+| `bfsi_loans_staging` | `stg_loans` view |
+| `bfsi_loans_intermediate` | `int_loans_enriched` table |
+| `bfsi_loans` | `fact_loans` + 5 dimension tables — Power BI connects here |
+
+### dbt Data Quality Tests — 37/37 Passing
+
+| Test Type | Count | What it checks |
+|---|---|---|
+| `not_null` | 16 | Key columns never empty |
+| `unique` | 11 | Primary keys on all dimension tables |
+| `relationships` | 5 | FK integrity — every fact row resolves to a valid dimension |
+| `accepted_values` | 5 | `loan_outcome` ∈ {0,1}, `grade` ∈ {A–G} |
 
 ---
 
@@ -205,25 +260,26 @@ Designed a fully normalized **star schema** with 6 tables:
 
 ## 🔄 Project Pipeline
 
-| Day | Task | Output |
+| Phase | Task | Output |
 |---|---|---|
-| Day 1 | Data Quality Audit & Cleaning | 1,342,942 rows, 0 nulls |
-| Day 2 | Feature Engineering | 91 columns |
-| Day 3 | Exploratory Data Analysis | 6 charts saved |
-| Day 4 | Statistical Validation | 4 tests completed |
-| Day 5 | MySQL Star Schema & Ingestion | 6 tables loaded |
-| Day 6 | SQL Query Library | 6 analytical queries |
-| Day 7–10 | Power BI Dashboard | 4-page dashboard published |
+| 1 | Data Quality Audit & Cleaning | 1,342,942 rows, 0 nulls |
+| 2 | Feature Engineering | 91 columns |
+| 3 | Exploratory Data Analysis | 6 charts |
+| 4 | Statistical Validation | 4 tests (Chi-Square, T-Test) |
+| 5 | MySQL Star Schema & Ingestion | 6 tables loaded |
+| 6 | SQL Query Library | 6 analytical queries + benchmarks |
+| 7 | Power BI Dashboard | 4-page dashboard published on NovyPro |
+| 8 | BigQuery + dbt Extension | 8 models, 37/37 tests passing, Power BI on cloud |
 
 ---
 
 ## 👤 About Me
 
 **Shreenivas S B**
-2nd Year MCA Student — Data Science Specialization
+Final Year MCA Student — Data Science Specialization
 Dayananda Sagar University, Bangalore
 
-🎯 Actively seeking **Data Analyst** internship/job opportunities.
+🎯 Actively seeking **Data Analyst / BI Analyst** opportunities.
 
 📧 Connect with me on [LinkedIn](https://www.linkedin.com/in/shreenivas-s-b-22b48a31a/)
 

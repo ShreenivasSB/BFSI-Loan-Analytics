@@ -1,0 +1,24 @@
+
+  
+    
+
+    create or replace table `bfsi-loan-analytics`.`bfsi_loans`.`dim_risk_tier`
+      
+    
+    
+
+    
+    OPTIONS()
+    as (
+      with risk_tiers as (
+    select distinct risk_tier
+    from `bfsi-loan-analytics`.`bfsi_loans_intermediate`.`int_loans_enriched`
+)
+
+select
+    ROW_NUMBER() OVER (ORDER BY risk_tier)  as risk_tier_id,
+    risk_tier
+from risk_tiers
+order by risk_tier
+    );
+  

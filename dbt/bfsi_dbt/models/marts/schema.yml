@@ -1,0 +1,142 @@
+version: 2
+
+models:
+
+  - name: fact_loans
+    description: "1,342,942 loan records — fact table of the star schema. Each row is one loan."
+    columns:
+      - name: loan_id
+        description: "Surrogate key — unique integer per loan"
+        tests:
+          - not_null
+          - unique
+
+      - name: grade_id
+        description: "FK to dim_grade"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_grade')
+                field: grade_id
+
+      - name: purpose_id
+        description: "FK to dim_purpose"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_purpose')
+                field: purpose_id
+
+      - name: income_band_id
+        description: "FK to dim_income_band"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_income_band')
+                field: income_band_id
+
+      - name: dti_band_id
+        description: "FK to dim_dti_band"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_dti_band')
+                field: dti_band_id
+
+      - name: risk_tier_id
+        description: "FK to dim_risk_tier"
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_risk_tier')
+                field: risk_tier_id
+
+      - name: loan_outcome
+        description: "1 = defaulted, 0 = fully paid / current"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+              quote: false
+
+      - name: loan_amnt
+        tests:
+          - not_null
+
+      - name: issue_year
+        tests:
+          - not_null
+
+  - name: dim_grade
+    description: "7 loan grades A through G"
+    columns:
+      - name: grade_id
+        description: "Surrogate primary key"
+        tests:
+          - not_null
+          - unique
+
+      - name: grade
+        description: "Loan grade letter (A–G)"
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+
+  - name: dim_purpose
+    description: "14 loan purpose categories"
+    columns:
+      - name: purpose_id
+        tests:
+          - not_null
+          - unique
+
+      - name: purpose
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_income_band
+    description: "Income segment buckets: Low / Medium / High / Very High"
+    columns:
+      - name: income_band_id
+        tests:
+          - not_null
+          - unique
+
+      - name: income_band
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_dti_band
+    description: "DTI range buckets: 0-10 / 10-15 / 15-20 / 20-25 / 25+"
+    columns:
+      - name: dti_band_id
+        tests:
+          - not_null
+          - unique
+
+      - name: dti_band
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_risk_tier
+    description: "Risk tiers: Low / Medium / High"
+    columns:
+      - name: risk_tier_id
+        tests:
+          - not_null
+          - unique
+
+      - name: risk_tier
+        tests:
+          - not_null
+          - unique

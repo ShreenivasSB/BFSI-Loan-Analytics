@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: raw
+    database: bfsi-loan-analytics
+    schema: raw
+    description: "Raw Lending Club loan data loaded from lending_club_features.csv"
+    tables:
+      - name: raw_loans
+        description: "1,342,942 rows × 91 columns — cleaned and feature-engineered in Python before load"
