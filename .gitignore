@@ -14,3 +14,7 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+# dbt generated artifacts
+dbt/bfsi_dbt/target/
+dbt/bfsi_dbt/logs/
