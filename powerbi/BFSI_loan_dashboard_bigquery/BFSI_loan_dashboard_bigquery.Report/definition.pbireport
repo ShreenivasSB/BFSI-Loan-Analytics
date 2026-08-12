@@ -1,8 +1,0 @@
-{
-  "version": "4.0",
-  "datasetReference": {
-    "byPath": {
-      "path": "../BFSI_loan_dashboard_bigquery.Dataset"
-    }
-  }
-}
