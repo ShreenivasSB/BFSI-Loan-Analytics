@@ -22,3 +22,6 @@ dbt/bfsi_dbt/logs/
 # pbi-tools intermediate artifacts
 powerbi/BFSI_loan_dashboard/
 powerbi/*.bim
+
+# scheduled refresh script logs
+scripts/logs/

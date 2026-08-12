@@ -95,7 +95,8 @@ BFSI_Loan_Analytics/
 │               └── schema.yml                # 44 data quality tests
 │
 ├── scripts/
-│   └── load_to_bigquery.py                   # CSV → BigQuery raw loader
+│   ├── load_to_bigquery.py                   # CSV → BigQuery raw loader
+│   └── refresh_dbt_build.ps1                 # Weekly task: keeps 60-day free-tier tables from expiring
 │
 ├── powerbi/
 │   └── BFSI_loan_dashboard.pbix              # 4-page Power BI dashboard (BigQuery)
@@ -238,6 +239,22 @@ sensible relationships:
 table model — rebuilt on every `dbt run` against whatever model is currently deployed
 — with a `not_null`/`unique`/FK test suite plus a singular test enforcing
 `predicted_default_probability` stays within [0, 1].
+
+### Keeping the free-tier dataset alive
+
+The `bfsi-loan-analytics` GCP project has no billing account attached (by design —
+zero billing risk), which means BigQuery enforces a hard **60-day default table
+expiration** that can't be removed or extended without enabling billing. Left alone,
+every table in `bfsi_loans` — including `fact_loans`, which the public Power BI
+dashboard reads — would silently disappear 60 days after creation.
+
+Fix: [scripts/refresh_dbt_build.ps1](scripts/refresh_dbt_build.ps1) retrains
+`model_default_risk` and re-runs `dbt build`, which recreates every table
+(`CREATE OR REPLACE`) and resets each one's expiration clock. A Windows Task
+Scheduler job (`BFSI_dbt_weekly_refresh`) runs it every Monday, with
+`StartWhenAvailable` enabled so a missed run (e.g. laptop off) catches up
+automatically rather than risking the 60-day window — comfortably inside the limit
+either way. Logs to `scripts/logs/dbt_refresh.log` (gitignored).
 
 ---
 
