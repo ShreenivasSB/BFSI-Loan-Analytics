@@ -19,6 +19,7 @@ Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt
 | Resource | Link |
 |---|---|
 | 📊 Live Dashboard (BigQuery + BQML, 5 pages) | [View Dashboard](https://app.powerbi.com/view?r=eyJrIjoiNDQwZDE0NTctY2JjOC00ZTkyLWI2MjMtMzkxMjE4ZjZlOWNmIiwidCI6ImRiMTljMjFjLWFlODctNDY4Yi05MjQ4LTFhMjkyZDM3OWRjMiJ9) |
+| 📦 Download .pbix (BigQuery + BQML) | [GitHub Release](https://github.com/ShreenivasSB/BFSI-Loan-Analytics/releases/tag/dashboard-v2) |
 | 📊 Original Dashboard (NovyPro, MySQL) | [View Dashboard](https://novypro.com/project/bfsi-loan-risk--portfolio-analytics) |
 | 💼 LinkedIn | [Shreenivas S B](https://www.linkedin.com/in/shreenivas-s-b-22b48a31a/) |
 | 🐙 GitHub Profile | [ShreenivasSB](https://github.com/ShreenivasSB) |
@@ -103,8 +104,9 @@ BFSI_Loan_Analytics/
 │   ├── BFSI_loan_dashboard.pbix               # Original 4-page dashboard (MySQL) — fallback
 │   └── BFSI_loan_dashboard_bigquery.pbix      # 5-page dashboard (BigQuery + BQML) — not tracked
 │                                               # in git (exceeds GitHub's 100MB limit after
-│                                               # adding predictions); see GitHub Releases for
-│                                               # a downloadable copy, or use the live public link
+│                                               # adding predictions); download from the
+│                                               # dashboard-v2 GitHub Release, or use the live
+│                                               # public link above
 │
 ├── .gitignore
 └── README.md
