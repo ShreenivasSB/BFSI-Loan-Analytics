@@ -5,11 +5,12 @@
 ![MySQL](https://img.shields.io/badge/MySQL-Star%20Schema-orange?logo=mysql)
 ![BigQuery](https://img.shields.io/badge/BigQuery-Cloud%20Warehouse-blue?logo=googlebigquery)
 ![dbt](https://img.shields.io/badge/dbt-1.11-orange?logo=dbt)
+![BigQuery ML](https://img.shields.io/badge/BigQuery%20ML-logistic__reg-blue?logo=googlebigquery)
 ![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
 
 A comprehensive **Data Analytics project** built on 1.34 million real-world loan records from the Lending Club dataset. This project covers the full data analyst pipeline — from raw data cleaning to a 4-page interactive Power BI dashboard — with a focus on loan default risk, portfolio health, and actionable business recommendations for a BFSI (Banking, Financial Services & Insurance) context.
 
-Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt transformation pipeline** (staging → intermediate → marts), with the Power BI dashboard reconnected to run live off the cloud layer.
+Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt transformation pipeline** (staging → intermediate → marts), with the Power BI dashboard reconnected to run live off the cloud layer, plus a **BigQuery ML** logistic regression model scoring every loan's predicted default probability.
 
 ---
 
@@ -39,6 +40,7 @@ To analyze a large-scale BFSI loan dataset and identify key risk drivers behind 
 | MySQL | Local star schema design, SQL query library, query benchmarking |
 | Google BigQuery | Cloud data warehouse — free tier (10 GB storage, 1 TB queries/month) |
 | dbt 1.11 | 3-layer transformation pipeline: staging → intermediate → marts |
+| BigQuery ML | Logistic regression default risk model — `CREATE MODEL` / `ML.EVALUATE` / `ML.PREDICT` |
 | Power BI Desktop | 4-page interactive dashboard — reconnected to BigQuery |
 | VS Code | Python scripting and development environment |
 
@@ -67,11 +69,15 @@ BFSI_Loan_Analytics/
 │
 ├── sql/
 │   ├── query_library.sql                     # 6 analytical SQL queries
-│   └── explain_benchmarks.md                 # Query performance benchmarks
+│   ├── explain_benchmarks.md                 # Query performance benchmarks
+│   └── bqml/
+│       └── train_default_risk_model.sql      # BQML logistic_reg training query
 │
 ├── dbt/
 │   └── bfsi_dbt/
 │       ├── dbt_project.yml
+│       ├── tests/
+│       │   └── assert_predicted_default_probability_between_0_and_1.sql
 │       └── models/
 │           ├── sources.yml                   # BigQuery raw source definition
 │           ├── staging/
@@ -85,7 +91,8 @@ BFSI_Loan_Analytics/
 │               ├── dim_income_band.sql       # 4 rows
 │               ├── dim_dti_band.sql          # 5 rows
 │               ├── dim_risk_tier.sql         # 3 rows
-│               └── schema.yml                # 37 data quality tests
+│               ├── fct_loan_predictions.sql  # ML.PREDICT scores from model_default_risk
+│               └── schema.yml                # 44 data quality tests
 │
 ├── scripts/
 │   └── load_to_bigquery.py                   # CSV → BigQuery raw loader
@@ -154,14 +161,83 @@ Power BI Dashboard (Import mode from bfsi_loans dataset)
 | `bfsi_loans_intermediate` | `int_loans_enriched` table |
 | `bfsi_loans` | `fact_loans` + 5 dimension tables — Power BI connects here |
 
-### dbt Data Quality Tests — 37/37 Passing
+### dbt Data Quality Tests — 44/44 Passing
 
 | Test Type | Count | What it checks |
 |---|---|---|
-| `not_null` | 16 | Key columns never empty |
-| `unique` | 11 | Primary keys on all dimension tables |
-| `relationships` | 5 | FK integrity — every fact row resolves to a valid dimension |
-| `accepted_values` | 5 | `loan_outcome` ∈ {0,1}, `grade` ∈ {A–G} |
+| `not_null` | 19 | Key columns never empty |
+| `unique` | 12 | Primary keys on all dimension tables + `fct_loan_predictions` |
+| `relationships` | 6 | FK integrity — every fact/prediction row resolves to a valid parent |
+| `accepted_values` | 6 | `loan_outcome`/`predicted_loan_outcome` ∈ {0,1}, `grade` ∈ {A–G} |
+| singular | 1 | `predicted_default_probability` stays within [0, 1] |
+
+---
+
+## 🤖 BigQuery ML — Predictive Default Risk Scoring
+
+A logistic regression model (`model_default_risk`) trained directly in BigQuery via
+[BQML](sql/bqml/train_default_risk_model.sql), scoring every loan's probability of
+default. Kept to plain SQL (`CREATE MODEL` / `ML.EVALUATE` / `ML.PREDICT`) rather than
+Vertex AI or Python — the Data Analyst-scope tool for this kind of model.
+
+### Features
+
+| Included (15) | Excluded — leakage | Excluded — multicollinearity |
+|---|---|---|
+| `loan_amnt`, `term`, `int_rate`, `dti`, `annual_inc`, `fico_midpoint`, `home_ownership`, `verification_status`, `application_type`, `addr_state`, `revol_bal`, `revol_util`, `open_acc`, `pub_rec`, `delinq_2yrs` | `total_pymnt`, `total_rec_prncp`, `total_rec_int`, `recoveries`, `out_prncp`, `loan_status` — only known once a loan has already matured | `installment` (deterministic function of loan_amnt/int_rate/term), `fico_range_low`/`fico_range_high` (collapsed into `fico_midpoint`), `sub_grade` (redundant with `int_rate` — same underlying Lending Club risk grade; kept `int_rate` to keep the correlation sanity-check below non-circular) |
+
+**Known limitation, stated openly rather than hidden:** `int_rate` still reflects
+Lending Club's own risk pricing, so the model blends that priced-risk signal with
+DTI/income/FICO into one score rather than discovering entirely new risk factors from
+scratch.
+
+### Time-based train/eval split
+
+`data_split_method = 'SEQ'` on a `recency_rank` column (`-UNIX_DATE(issue_date)`) so
+the model trains on older loans and evaluates on the most recent 20% — a realistic
+"train on the past, evaluate on the future" split rather than a random shuffle.
+Verified directly against the trained data:
+
+| | Date range |
+|---|---|
+| Full dataset | 2007-06-01 → 2018-12-01 |
+| Eval set (most recent 20%, 268,588 rows) | 2016-10-01 → 2018-12-01 |
+
+### Model performance (`ML.EVALUATE`)
+
+| Metric | Value |
+|---|---|
+| ROC AUC | 0.669 |
+| Precision | 0.219 |
+| Recall | 0.699 |
+| Accuracy | 0.564 |
+| F1 | 0.333 |
+
+`auto_class_weights = TRUE` counteracts the 19.82% base default rate, trading precision
+for recall — appropriate for a risk-screening use case where missing an actual default
+is costlier than a false alarm.
+
+### Sanity check
+
+With `grade`/`sub_grade` excluded from the features, correlating `predicted_default_probability`
+against the raw borrower variables is a non-circular check that the model learned
+sensible relationships:
+
+| Variable | Correlation with predicted default probability | Expected direction |
+|---|---|---|
+| `int_rate` | +0.86 | ✅ higher rate → higher risk |
+| `dti` | +0.28 | ✅ higher DTI → higher risk |
+| FICO midpoint | −0.55 | ✅ higher score → lower risk |
+| `annual_inc` | −0.10 | ✅ higher income → lower risk |
+
+### Serving predictions
+
+`dbt/bfsi_dbt/models/marts/fct_loan_predictions.sql` runs `ML.PREDICT` against
+`model_default_risk` for every loan in `fact_loans`, producing `loan_id`,
+`predicted_loan_outcome`, and `predicted_default_probability`. It's a regular dbt
+table model — rebuilt on every `dbt run` against whatever model is currently deployed
+— with a `not_null`/`unique`/FK test suite plus a singular test enforcing
+`predicted_default_probability` stays within [0, 1].
 
 ---
 
@@ -270,6 +346,7 @@ Power BI Dashboard (Import mode from bfsi_loans dataset)
 | 6 | SQL Query Library | 6 analytical queries + benchmarks |
 | 7 | Power BI Dashboard | 4-page dashboard published on NovyPro |
 | 8 | BigQuery + dbt Extension | 8 models, 37/37 tests passing, Power BI on cloud |
+| 9 | BigQuery ML — Default Risk Scoring | `model_default_risk` (AUC 0.669), 9 models, 44/44 tests passing |
 
 ---
 

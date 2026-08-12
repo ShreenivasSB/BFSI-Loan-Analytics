@@ -140,3 +140,37 @@ models:
         tests:
           - not_null
           - unique
+
+  - name: fct_loan_predictions
+    description: >
+      Predicted default probability per loan, scored by BQML model
+      model_default_risk (logistic_reg) via ML.PREDICT. Trained outside the dbt DAG
+      (sql/bqml/train_default_risk_model.sql) on a time-based split — train on loans
+      issued through 2016-09, eval on the most recent 20% (2016-10 through 2018-12).
+      Rebuilt every dbt run against the current trained model.
+    columns:
+      - name: loan_id
+        description: "FK to fact_loans"
+        tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('fact_loans')
+                field: loan_id
+
+      - name: predicted_loan_outcome
+        description: "Model's binary prediction: 1 = predicted default, 0 = predicted fully paid"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
+              quote: false
+
+      - name: predicted_default_probability
+        description: >
+          Model's predicted probability that this loan defaults (loan_outcome = 1).
+          Range check (0-1 inclusive) enforced by the singular test
+          assert_predicted_default_probability_between_0_and_1.
+        tests:
+          - not_null
