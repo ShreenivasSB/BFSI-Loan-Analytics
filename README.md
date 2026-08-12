@@ -29,7 +29,7 @@ Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt
 
 To analyze a large-scale BFSI loan dataset and identify key risk drivers behind loan defaults — across loan grades, DTI bands, income segments, and loan purposes — and present findings through a professional Power BI dashboard with clear business recommendations.
 
-> ⚠️ This is a **Data Analyst** project. No machine learning or predictive modeling is used. All insights are derived from statistical analysis, SQL queries, and visual storytelling.
+> ⚠️ This is a **Data Analyst** project at its core — insights are primarily derived from statistical analysis, SQL queries, and visual storytelling, not ML engineering. It's since been extended with a scoped **BigQuery ML** default-risk model (plain SQL `CREATE MODEL`/`ML.PREDICT`, no Vertex AI or Python — see the "BigQuery ML — Predictive Default Risk Scoring" section below), kept intentionally lightweight to stay within Data Analyst scope rather than turn this into an MLE/DS project.
 
 ---
 
