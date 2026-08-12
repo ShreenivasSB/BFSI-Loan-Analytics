@@ -20,7 +20,6 @@ Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt
 |---|---|
 | 📊 Live Dashboard (BigQuery + BQML, 5 pages) | [View Dashboard](https://app.powerbi.com/view?r=eyJrIjoiNDQwZDE0NTctY2JjOC00ZTkyLWI2MjMtMzkxMjE4ZjZlOWNmIiwidCI6ImRiMTljMjFjLWFlODctNDY4Yi05MjQ4LTFhMjkyZDM3OWRjMiJ9) |
 | 📦 Download .pbix (BigQuery + BQML) | [GitHub Release](https://github.com/ShreenivasSB/BFSI-Loan-Analytics/releases/tag/dashboard-v2) |
-| 📊 Original Dashboard (NovyPro, MySQL) | [View Dashboard](https://novypro.com/project/bfsi-loan-risk--portfolio-analytics) |
 | 💼 LinkedIn | [Shreenivas S B](https://www.linkedin.com/in/shreenivas-s-b-22b48a31a/) |
 | 🐙 GitHub Profile | [ShreenivasSB](https://github.com/ShreenivasSB) |
 
