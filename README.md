@@ -386,7 +386,7 @@ either way. Logs to `scripts/logs/dbt_refresh.log` (gitignored).
 ## 👤 About Me
 
 **Shreenivas S B**
-Final Year MCA Student — Data Science Specialization
+MCA Graduate — Data Science Specialization
 Dayananda Sagar University, Bangalore
 
 🎯 Actively seeking **Data Analyst / BI Analyst** opportunities.
