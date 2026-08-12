@@ -8,7 +8,7 @@
 ![BigQuery ML](https://img.shields.io/badge/BigQuery%20ML-logistic__reg-blue?logo=googlebigquery)
 ![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
 
-A comprehensive **Data Analytics project** built on 1.34 million real-world loan records from the Lending Club dataset. This project covers the full data analyst pipeline — from raw data cleaning to a 4-page interactive Power BI dashboard — with a focus on loan default risk, portfolio health, and actionable business recommendations for a BFSI (Banking, Financial Services & Insurance) context.
+A comprehensive **Data Analytics project** built on 1.34 million real-world loan records from the Lending Club dataset. This project covers the full data analyst pipeline — from raw data cleaning to a 5-page interactive Power BI dashboard — with a focus on loan default risk, portfolio health, and actionable business recommendations for a BFSI (Banking, Financial Services & Insurance) context.
 
 Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt transformation pipeline** (staging → intermediate → marts), with the Power BI dashboard reconnected to run live off the cloud layer, plus a **BigQuery ML** logistic regression model scoring every loan's predicted default probability.
 
@@ -18,7 +18,8 @@ Extended with a **cloud data warehouse layer** using Google BigQuery and a **dbt
 
 | Resource | Link |
 |---|---|
-| 📊 Live Dashboard (NovyPro) | [View Dashboard](https://novypro.com/project/bfsi-loan-risk--portfolio-analytics) |
+| 📊 Live Dashboard (BigQuery + BQML, 5 pages) | [View Dashboard](https://app.powerbi.com/view?r=eyJrIjoiNDQwZDE0NTctY2JjOC00ZTkyLWI2MjMtMzkxMjE4ZjZlOWNmIiwidCI6ImRiMTljMjFjLWFlODctNDY4Yi05MjQ4LTFhMjkyZDM3OWRjMiJ9) |
+| 📊 Original Dashboard (NovyPro, MySQL) | [View Dashboard](https://novypro.com/project/bfsi-loan-risk--portfolio-analytics) |
 | 💼 LinkedIn | [Shreenivas S B](https://www.linkedin.com/in/shreenivas-s-b-22b48a31a/) |
 | 🐙 GitHub Profile | [ShreenivasSB](https://github.com/ShreenivasSB) |
 
@@ -41,7 +42,7 @@ To analyze a large-scale BFSI loan dataset and identify key risk drivers behind 
 | Google BigQuery | Cloud data warehouse — free tier (10 GB storage, 1 TB queries/month) |
 | dbt 1.11 | 3-layer transformation pipeline: staging → intermediate → marts |
 | BigQuery ML | Logistic regression default risk model — `CREATE MODEL` / `ML.EVALUATE` / `ML.PREDICT` |
-| Power BI Desktop | 4-page interactive dashboard — reconnected to BigQuery |
+| Power BI Desktop | 5-page interactive dashboard — reconnected to BigQuery |
 | VS Code | Python scripting and development environment |
 
 ---
@@ -99,7 +100,11 @@ BFSI_Loan_Analytics/
 │   └── refresh_dbt_build.ps1                 # Weekly task: keeps 60-day free-tier tables from expiring
 │
 ├── powerbi/
-│   └── BFSI_loan_dashboard.pbix              # 4-page Power BI dashboard (BigQuery)
+│   ├── BFSI_loan_dashboard.pbix               # Original 4-page dashboard (MySQL) — fallback
+│   └── BFSI_loan_dashboard_bigquery.pbix      # 5-page dashboard (BigQuery + BQML) — not tracked
+│                                               # in git (exceeds GitHub's 100MB limit after
+│                                               # adding predictions); see GitHub Releases for
+│                                               # a downloadable copy, or use the live public link
 │
 ├── .gitignore
 └── README.md
@@ -305,7 +310,7 @@ either way. Logs to `scripts/logs/dbt_refresh.log` (gitignored).
 
 ---
 
-## 📋 Power BI Dashboard — 4 Pages
+## 📋 Power BI Dashboard — 5 Pages
 
 ### Page 1: Portfolio Overview
 ![Page 1](assets/screenshots/page1_portfolio_overview.png)
@@ -339,6 +344,16 @@ either way. Logs to `scripts/logs/dbt_refresh.log` (gitignored).
 ![Page 4](assets/screenshots/page4_business_recommendations.png)
 
 - 4 actionable recommendations backed by exact data findings
+
+---
+
+### Page 5: Predictive Risk Scoring
+![Page 5](assets/screenshots/page5_predictive_risk_scoring.png)
+
+- Model AUC KPI card (0.669)
+- Predicted default probability distribution (decile-binned histogram)
+- Actual default rate by predicted risk decile — the calibration chart proving the model's ranking has real signal despite `auto_class_weights` compressing raw probabilities toward 0.5
+- Top 10 highest-risk loans table (live-scored via BQML `ML.PREDICT`)
 
 ---
 

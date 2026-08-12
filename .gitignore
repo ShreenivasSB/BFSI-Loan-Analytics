@@ -23,5 +23,14 @@ dbt/bfsi_dbt/logs/
 powerbi/BFSI_loan_dashboard/
 powerbi/*.bim
 
+# BigQuery-connected pbix exceeds GitHub's 100MB file limit (grew to ~116MB after
+# adding the Predictive Risk Scoring page's imported data) -- distributed instead as
+# a GitHub Release asset (see README). Kept locally, not tracked in git going forward.
+powerbi/BFSI_loan_dashboard_bigquery.pbix
+
 # scheduled refresh script logs
 scripts/logs/
+
+# Playwright MCP verification scratch output (screenshots/snapshots)
+.playwright-mcp/
+pbi_public_check.png
