@@ -1,0 +1,28 @@
+table 'bfsi_loans dim_income_band'
+
+	column income_band_id
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: income_band_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column income_band
+		dataType: string
+		summarizeBy: none
+		sourceColumn: income_band
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'bfsi_loans dim_income_band' = m
+		mode: import
+		source =
+				let
+				    Source = GoogleBigQuery.Database([BillingProject="bfsi-loan-analytics"]),
+				    bfsi_loans_dim_income_band = Source{[Name="bfsi_loans"]}[Data]{[Name="dim_income_band"]}[Data]
+				in
+				    bfsi_loans_dim_income_band
+
+	annotation PBI_ResultType = Table
+

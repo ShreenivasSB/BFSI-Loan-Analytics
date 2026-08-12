@@ -18,3 +18,7 @@ Thumbs.db
 # dbt generated artifacts
 dbt/bfsi_dbt/target/
 dbt/bfsi_dbt/logs/
+
+# pbi-tools intermediate artifacts
+powerbi/BFSI_loan_dashboard/
+powerbi/*.bim

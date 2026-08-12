@@ -1,0 +1,30 @@
+﻿relationship d39f9bfd-93cc-4679-95fe-3bbe924aa146
+	fromColumn: 'bfsi_loans fact_loans'.dti_band_id
+	toColumn: 'bfsi_loans dim_dti_band'.dti_band_id
+
+	annotation PBI_IsFromSource = FS
+
+relationship aff51f14-e54a-411b-9d5f-cd50dbbcf57e
+	fromColumn: 'bfsi_loans fact_loans'.grade_id
+	toColumn: 'bfsi_loans dim_grade'.grade_id
+
+	annotation PBI_IsFromSource = FS
+
+relationship 2da49c36-7589-4fc0-a14f-f104c5ee361a
+	fromColumn: 'bfsi_loans fact_loans'.income_band_id
+	toColumn: 'bfsi_loans dim_income_band'.income_band_id
+
+	annotation PBI_IsFromSource = FS
+
+relationship 81dd3991-f867-46dc-8046-8b39672c9c51
+	fromColumn: 'bfsi_loans fact_loans'.purpose_id
+	toColumn: 'bfsi_loans dim_purpose'.purpose_id
+
+	annotation PBI_IsFromSource = FS
+
+relationship 2d7856c9-45fe-435d-a1b4-b0b300fd95d3
+	fromColumn: 'bfsi_loans fact_loans'.risk_tier_id
+	toColumn: 'bfsi_loans dim_risk_tier'.risk_tier_id
+
+	annotation PBI_IsFromSource = FS
+

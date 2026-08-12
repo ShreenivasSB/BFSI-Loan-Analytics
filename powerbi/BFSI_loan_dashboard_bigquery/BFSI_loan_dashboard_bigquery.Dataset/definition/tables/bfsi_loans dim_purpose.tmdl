@@ -1,0 +1,28 @@
+table 'bfsi_loans dim_purpose'
+
+	column purpose_id
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: purpose_id
+
+		annotation SummarizationSetBy = Automatic
+
+	column purpose
+		dataType: string
+		summarizeBy: none
+		sourceColumn: purpose
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'bfsi_loans dim_purpose' = m
+		mode: import
+		source =
+				let
+				    Source = GoogleBigQuery.Database([BillingProject="bfsi-loan-analytics"]),
+				    bfsi_loans_dim_purpose = Source{[Name="bfsi_loans"]}[Data]{[Name="dim_purpose"]}[Data]
+				in
+				    bfsi_loans_dim_purpose
+
+	annotation PBI_ResultType = Table
+

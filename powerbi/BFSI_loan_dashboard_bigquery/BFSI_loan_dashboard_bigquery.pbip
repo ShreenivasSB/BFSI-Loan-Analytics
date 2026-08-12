@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "artifacts": [
+    {
+      "report": {
+        "path": "BFSI_loan_dashboard_bigquery.Report"
+      }
+    }
+  ],
+  "settings": {
+    "enableTmdlSchemaChange": true
+  }
+}
