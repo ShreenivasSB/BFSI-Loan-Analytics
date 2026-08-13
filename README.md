@@ -42,6 +42,7 @@ To analyze a large-scale BFSI loan dataset and identify key risk drivers behind 
 | Google BigQuery | Cloud data warehouse — free tier (10 GB storage, 1 TB queries/month) |
 | dbt 1.11 | 3-layer transformation pipeline: staging → intermediate → marts |
 | BigQuery ML | Logistic regression default risk model — `CREATE MODEL` / `ML.EVALUATE` / `ML.PREDICT` |
+| Ollama (`llama3:8b`, local) | AI-generated risk narrative bullets — zero-cost, runs entirely on-device |
 | Power BI Desktop | 5-page interactive dashboard — reconnected to BigQuery |
 | VS Code | Python scripting and development environment |
 
@@ -97,7 +98,8 @@ BFSI_Loan_Analytics/
 │
 ├── scripts/
 │   ├── load_to_bigquery.py                   # CSV → BigQuery raw loader
-│   └── refresh_dbt_build.ps1                 # Weekly task: keeps 60-day free-tier tables from expiring
+│   ├── refresh_dbt_build.ps1                 # Weekly task: keeps 60-day free-tier tables from expiring
+│   └── generate_risk_narratives.py           # Local Ollama → risk_narrative_insights table
 │
 ├── powerbi/
 │   ├── BFSI_loan_dashboard.pbix               # Original 4-page dashboard (MySQL) — fallback
@@ -264,6 +266,39 @@ either way. Logs to `scripts/logs/dbt_refresh.log` (gitignored).
 
 ---
 
+## 🧠 AI-Generated Risk Narratives (local LLM)
+
+[scripts/generate_risk_narratives.py](scripts/generate_risk_narratives.py) turns the
+dashboard's own default-rate aggregates (by grade, DTI band, risk tier, loan purpose)
+into short natural-language insight bullets, using a **local Ollama model
+(`llama3:8b`)** instead of a paid LLM API — zero cost, zero data leaving the machine,
+consistent with this project's zero-billing-risk approach to every other cloud choice.
+Output is written to `bfsi_loans.risk_narrative_insights`, which the dashboard's Risk
+Intelligence page reads instead of a hardcoded text box.
+
+**Correct division of labor between SQL and the LLM.** An early version asked the LLM
+to find the highest/lowest-risk segment itself from a data table in the prompt — it
+got it wrong on 2 of 4 segments (picked Grade F instead of the actual worst, Grade G;
+picked `debt_consolidation` instead of the actual worst, `small_business`, which
+wasn't even close). An 8B local model is not reliable at min/max reasoning over a
+list. Fix: the highest/lowest segment and the exact risk multiplier are computed in
+Python (`pick_extremes`, always correct), and the LLM's only job is phrasing those
+already-selected facts into one polished sentence matching the dashboard's tone. A
+validation step (`validate_narrative`) then checks the LLM's output still contains the
+exact rate figures verbatim before trusting it — any mismatch falls back to a
+deterministic sentence template rather than shipping an unverified number.
+
+Sample output (2026-08-13 run, verified against live BigQuery aggregates):
+
+| Segment | Generated narrative |
+|---|---|
+| Grade | Grade **G** defaults at **49.5%**, **8.29x** greater than Grade **A** at **5.97%** |
+| DTI band | The **25+** band defaults at **26.64%**, **1.82x** greater than **0–10** at **14.66%** |
+| Risk tier | **High** risk defaults at **40.59%**, **3.85x** higher than **Low** at **10.55%** |
+| Purpose | **Small business** loans default at **29.43%**, **2.52x** riskier than **wedding** loans at **11.66%** |
+
+---
+
 ## 📈 Key Findings
 
 ### 1. Loan Grade Risk
@@ -380,6 +415,7 @@ either way. Logs to `scripts/logs/dbt_refresh.log` (gitignored).
 | 7 | Power BI Dashboard | 4-page dashboard published on NovyPro |
 | 8 | BigQuery + dbt Extension | 8 models, 37/37 tests passing, Power BI on cloud |
 | 9 | BigQuery ML — Default Risk Scoring | `model_default_risk` (AUC 0.669), 9 models, 44/44 tests passing |
+| 10 | AI-Generated Risk Narratives | Local Ollama (`llama3:8b`) → `risk_narrative_insights` table |
 
 ---
 
