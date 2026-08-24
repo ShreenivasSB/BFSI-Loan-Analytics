@@ -5,8 +5,8 @@ Queries BigQuery for the same default-rate aggregates already shown on the
 Power BI dashboard (by grade, DTI band, risk tier, loan purpose), sends each
 segment's real numbers to a local Ollama model to turn into a one-line,
 dashboard-style narrative bullet, and writes the results to
-bfsi_loans.risk_narrative_insights. Power BI's Risk Intelligence page reads
-that table instead of a hardcoded text box.
+bfsi_loans.risk_narrative_insights. The table is ready to be connected to
+Power BI's Risk Intelligence page, replacing its hardcoded text box.
 
 Runs entirely locally (BigQuery query + local Ollama inference) - no paid
 LLM API, matches the zero-billing-risk pattern used throughout this project.
